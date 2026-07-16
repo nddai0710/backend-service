@@ -16,6 +16,7 @@ import vn.daijava.controller.request.UserPasswordRequest;
 import vn.daijava.controller.request.UserUpdateRequest;
 import vn.daijava.controller.response.UserPageResponse;
 import vn.daijava.controller.response.UserResponse;
+import vn.daijava.exception.InvalidDataException;
 import vn.daijava.exception.ResourceNotFoundException;
 import vn.daijava.model.AddressEntity;
 import vn.daijava.model.UserEntity;
@@ -65,10 +66,11 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(order));
 
         Page<UserEntity> entityPage;
+
         if (StringUtils.hasLength(keyword)) {
             keyword = "%" + keyword.toLowerCase() + "%";
             entityPage = userRepository.searchByKeyword(keyword, pageable);
-        }else{
+        } else {
             entityPage = userRepository.findAll(pageable);
         }
 
@@ -107,6 +109,13 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public long save(UserCreationRequest req) {
         log.info("Saving user: {}", req);
+
+
+        UserEntity userByEmail =  userRepository.findByEmail(req.getEmail());
+        if (userByEmail != null) {
+            throw new InvalidDataException("User with email: " + req.getEmail() + " already exists");
+        }
+
         UserEntity user = new UserEntity();
         user.setFirstName(req.getFirstName());
         user.setLastName(req.getLastName());
