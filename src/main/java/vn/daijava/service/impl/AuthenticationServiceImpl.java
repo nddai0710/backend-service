@@ -16,6 +16,9 @@ import vn.daijava.repository.UserRepository;
 import vn.daijava.service.AuthenticationService;
 import vn.daijava.service.JwtService;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j(topic = "AUTHENTICATION-SERVICE")
@@ -29,21 +32,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public TokenResponse getAccessToken(SignInRequest request) {
         log.info("get access token");
 
+        List<String> authorities = new ArrayList<>();
         try{
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+            log.info("authenticated user: {}", authenticate.isAuthenticated());
+            log.info("authenticated role: {}", authenticate.getAuthorities().toString());
+            authorities.add(authenticate.getAuthorities().toString());
+
+            SecurityContextHolder.getContext().setAuthentication(authenticate);
         }catch (AuthenticationException e){
             log.error("Login fail, message = {}", e.getMessage());
             throw new AccessDeniedException(e.getMessage());
         }
 
-        var user = userRepository.findByUsername(request.getUsername());
-        if(user == null){
-            throw new UsernameNotFoundException("User not found");
-        }
-
-        String accessToken =  jwtService.generateAccessToken(user.getId(), request.getUsername(), user.getAuthorities());
-        String refreshToken =  jwtService.generateRefreshToken(user.getId(), request.getUsername(), user.getAuthorities());
+        String accessToken =  jwtService.generateAccessToken(request.getUsername(),authorities);
+        String refreshToken =  jwtService.generateRefreshToken(request.getUsername(), authorities);
 
         return TokenResponse.builder()
                 .accessToken(accessToken)

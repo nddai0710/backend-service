@@ -1,5 +1,7 @@
 package vn.daijava.config;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,12 +12,14 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import vn.daijava.common.TokenType;
 import vn.daijava.service.JwtService;
@@ -24,9 +28,12 @@ import vn.daijava.service.UserServiceDetail;
 import java.io.IOException;
 import java.util.Date;
 
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j(topic = "CUSTOMIZE-REQUEST_FILTER")
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class CustomizeRequestFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -36,21 +43,25 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.info("{} {}", request.getMethod(), request.getRequestURI());
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            authHeader = authHeader.substring(7);
-            log.info("Bearer authHeader: {}", authHeader.substring(0,20));
+        //TODO: check authority by request url
+
+//        return;
+
+        final String authHeader = request.getHeader(AUTHORIZATION);
+        if (StringUtils.hasLength(authHeader) && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            log.info("Bearer authHeader: {}", authHeader.substring(0, Math.min(20, authHeader.length())));
 
             String username = "";
             try {
-                username = jwtService.extractUsername(authHeader, TokenType.ACCESS_TOKEN);
+                username = jwtService.extractUsername(token, TokenType.ACCESS_TOKEN);
                 log.info("username: {}", username);
             } catch (AccessDeniedException e) {
                 log.error("Access Dined, message={}",e.getMessage());
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
-                response.getWriter().write(e.getMessage());
+                response.getWriter().write(errorResponse(request.getRequestURI(), e.getMessage()));
                 return;
             }
 
@@ -70,26 +81,28 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-//    private String errorResponse(String message) {
-//        try {
-//            ErrorResponse error = new ErrorResponse();
-//            error.setTimestamp(new Date());
-//            error.setError("Forbidden");
-//            error.setStatus(HttpServletResponse.SC_FORBIDDEN);
-//            error.setMessage(message);
-//
-//            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-//            return gson.toJson(error);
-//        }catch (Exception e){
-//            return "";
-//        }
-//    };
+    private String errorResponse(String url, String message) {
+        try {
+            ErrorResponse error = new ErrorResponse();
+            error.setTimestamp(new Date());
+            error.setError("Forbidden");
+            error.setPath(url);
+            error.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            error.setMessage(message);
+
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            return gson.toJson(error);
+        }catch (Exception e){
+            return "";
+        }
+    };
 
     @Setter
     @Getter
     private class ErrorResponse {
         private Date timestamp;
         private int status;
+        private String path;
         private String error;
         private String message;
     }

@@ -8,6 +8,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,7 +32,6 @@ public class GlobalException {
      */
     @ExceptionHandler({ConstraintViolationException.class,
             MissingServletRequestParameterException.class, MethodArgumentNotValidException.class})
-    @ResponseStatus(BAD_REQUEST)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "400", description = "Bad Request",
                     content = {@Content(mediaType = APPLICATION_JSON_VALUE,
@@ -76,14 +76,41 @@ public class GlobalException {
         return errorResponse;
     }
 
+    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "401", description = "Access Dined",
+                    content = {@Content(mediaType = APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    name = "401 Response",
+                                    summary = "Handle exception when user is unauthenticated",
+                                    value = """
+                                            {
+                                              "timestamp": "2023-10-19T06:07:35.321+00:00",
+                                              "status": 401,
+                                              "path": "/api/v1/...",
+                                              "error": "Unauthorized",
+                                              "message": "{data}.."
+                                            }
+                                            """
+                            ))})
+    })
+    public ErrorResponse handleForInternalAuthenticationServiceException(InternalAuthenticationServiceException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(UNAUTHORIZED.value());
+        errorResponse.setError(UNAUTHORIZED.getReasonPhrase());
+        errorResponse.setMessage("Username or password is incorrect");
+        return errorResponse;
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
-    @ResponseStatus(FORBIDDEN)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Forbidden",
                     content = {@Content(mediaType = APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
                                     name = "403 Response",
-                                    summary = "Handle exception when forbidden",
+                                    summary = "Handle exception when access forbidden",
                                     value = """
                                             {
                                               "timestamp": "2023-10-19T06:07:35.321+00:00",
@@ -95,7 +122,7 @@ public class GlobalException {
                                             """
                             ))})
     })
-    public ErrorResponse handleAccessDeniedException(AccessDeniedException e, WebRequest request) {
+    public ErrorResponse handleForBiddenException(Exception e, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse();
         errorResponse.setTimestamp(new Date());
         errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
@@ -107,9 +134,8 @@ public class GlobalException {
 
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(NOT_FOUND)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "404", description = "Bad Request",
+            @ApiResponse(responseCode = "404", description = "Not Found",
                     content = {@Content(mediaType = APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
                                     name = "404 Response",
@@ -142,7 +168,6 @@ public class GlobalException {
      * @return
      */
     @ExceptionHandler(InvalidDataException.class)
-    @ResponseStatus(CONFLICT)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "409", description = "Conflict",
                     content = {@Content(mediaType = APPLICATION_JSON_VALUE,
@@ -166,6 +191,35 @@ public class GlobalException {
         errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
         errorResponse.setStatus(CONFLICT.value());
         errorResponse.setError(CONFLICT.getReasonPhrase());
+        errorResponse.setMessage(e.getMessage());
+
+        return errorResponse;
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "500", description = "Internal Server Error",
+                    content = {@Content(mediaType = APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    name = "500 Response",
+                                    summary = "Handle exception when internal server error",
+                                    value = """
+                                            {
+                                              "timestamp": "2023-10-19T06:35:52.333+00:00",
+                                              "status": 500,
+                                              "path": "/api/v1/...",
+                                              "error": "Internal Server Error",
+                                              "message": "Connection timeout, please try again"
+                                            }
+                                            """
+                            ))})
+    })
+    public ErrorResponse handleException(Exception e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(INTERNAL_SERVER_ERROR.value());
+        errorResponse.setError(INTERNAL_SERVER_ERROR.getReasonPhrase());
         errorResponse.setMessage(e.getMessage());
 
         return errorResponse;
