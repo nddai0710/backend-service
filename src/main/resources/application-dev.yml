@@ -5,8 +5,8 @@ spring:
   devtools:
     add-properties: true
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/postgres}
-    username: ${POSTGRES_USER:postgres}
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_POST:5432/postgres
+    username: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:dai123}
     hikari: # Connection poll
       max-lifetime: 300000      # 5 phút
@@ -18,6 +18,9 @@ spring:
     show-sql: false
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 springdoc:
   api-docs:

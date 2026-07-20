@@ -17,6 +17,8 @@ import vn.daijava.controller.request.UserUpdateRequest;
 import vn.daijava.controller.response.UserPageResponse;
 import vn.daijava.controller.response.UserResponse;
 import vn.daijava.service.UserService;
+import vn.daijava.controller.response.ApiResponse;
+
 
 import java.util.*;
 
@@ -33,87 +35,80 @@ public class UserController {
     @Operation(summary = "Get user list", description = "API retrieve user from db")
     @GetMapping("/list")
     @PreAuthorize("hasAnyAuthority('Manager', 'Admin')")
-    public Map<String, Object> getList(@RequestParam(required = false) String keyword,
+    public ApiResponse getList(@RequestParam(required = false) String keyword,
                                        @RequestParam(required = false) String sort,
                                        @RequestParam(defaultValue = "0") int page,
                                        @RequestParam(defaultValue = "20") int size){
 
         log.info("Get user list");
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", HttpStatus.OK.value());
-        result.put("message", "user list");
-        result.put("data", userService.findAll(keyword, sort, page, size));
-
-        return result;
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("user list")
+                .data(userService.findAll(keyword, sort, page, size))
+                .build();
     }
 
     @Operation(summary = "Get user detail", description = "API retrieve user detail by ID from database")
     @GetMapping("/{userId}")
-    @PreAuthorize("hasAuthority('User')")
-    public Map<String, Object> getUserDetail(@PathVariable @Min(value = 1, message = "userId must be equals or greater than 0") Long userId) {
+    @PreAuthorize("hasAuthority('Admin')")
+    public ApiResponse getUserDetail(@PathVariable @Min(value = 1, message = "userId must be equals or greater than 0") Long userId) {
         log.info("Get user detail by ID: {}", userId);
         UserResponse userDetail = userService.findById(userId);
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", HttpStatus.OK.value());
-        result.put("message", "user list");
-        result.put("data", userDetail);
-        return result;
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("user")
+                .data(userDetail)
+                .build();
     }
 
     @Operation(summary = "Create user", description = "API add new user to database")
     @PostMapping("/add")
-    public ResponseEntity<Object> createUser(@RequestBody @Valid UserCreationRequest request){
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", HttpStatus.CREATED.value());
-        result.put("message", "user created");
-        result.put("data", userService.save(request));
+    public ApiResponse createUser(@RequestBody @Valid UserCreationRequest request){
 
-        return new ResponseEntity<>(result, HttpStatus.CREATED);
+        return ApiResponse.builder()
+                .status(HttpStatus.CREATED.value())
+                .message("user created successful")
+                .data(userService.save(request))
+                .build();
     }
 
     @Operation(summary = "Update user", description = "API update user to database")
     @PutMapping("/upd")
-    public Map<String, Object> updateUser(@RequestBody @Valid UserUpdateRequest request){
+    public ApiResponse updateUser(@RequestBody @Valid UserUpdateRequest request){
         log.info("Updating user: {}", request);
         userService.update(request);
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", HttpStatus.ACCEPTED.value());
-        result.put("message", "update success");
-        result.put("data", "");
-
-        return result;
+        return ApiResponse.builder()
+                .status(HttpStatus.ACCEPTED.value())
+                .message("user updated success")
+                .build();
     }
 
     @Operation(summary = "Change password", description = "API change password for user to database")
     @PatchMapping("/change-pwd")
-    public Map<String, Object> changePassword(@RequestBody @Valid UserPasswordRequest request){
+    public ApiResponse changePassword(@RequestBody @Valid UserPasswordRequest request){
         log.info("Changing password: {}", request);
+
         userService.changePassword(request);
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", HttpStatus.NO_CONTENT.value());
-        result.put("message", "Password changed successfully");
-        result.put("data", "");
-
-        return result;
+        return ApiResponse.builder()
+                .status(HttpStatus.NO_CONTENT.value())
+                .message("changed password successful")
+                .build();
     }
 
     @Operation(summary = "Delete user", description = "API activate user from database")
     @DeleteMapping("/del/{userId}")
     @PreAuthorize("hasAuthority('Admin')")
-    public Map<String, Object> deleteUser(@PathVariable @Min(value = 1, message = "userId must be equals or greater than 0") Long userId){
+    public ApiResponse deleteUser(@PathVariable @Min(value = 1, message = "userId must be equals or greater than 0") Long userId){
         log.info("Deleting user: {}", userId);
 //        userService.delelte(userId);
 
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", HttpStatus.RESET_CONTENT.value());
-        result.put("message", "User delete successfully");
-        result.put("data", "");
-
-        return result;
+        return ApiResponse.builder()
+                .status(HttpStatus.RESET_CONTENT.value())
+                .message("User deleted successfully")
+                .build();
     }
 }
