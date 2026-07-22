@@ -6,7 +6,7 @@ spring:
     add-properties: true
   datasource:
     url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/postgres}
-    username: ${POSTGRES_USER:postgres}
+    username: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:dai123}
     hikari: # Connection poll
       max-lifetime: 300000      # 5 phút
@@ -17,7 +17,10 @@ spring:
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 springdoc:
   api-docs:
@@ -30,3 +33,9 @@ openapi:
     server: http://localhost:${server.port}
     title: Backend service
     version: 1.0.0
+
+jwt:
+  expiryMinutes: 5
+  expiryDay: 14
+  accessKey: sK/Lkxxd4RHYYm/6O1odrFYHejeBIFzBXKH6XrFovY4=
+  refreshKey: Mdacrs7e8oDoSUW+CUVPSaoBdkcqnoqQN6plBD+4mbU=

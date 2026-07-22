@@ -25,7 +25,6 @@ import vn.daijava.repository.UserRepository;
 import vn.daijava.service.UserService;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -124,8 +123,11 @@ public class UserServiceImpl implements UserService {
         user.setEmail(req.getEmail());
         user.setPhone(req.getPhone());
         user.setUsername(req.getUsername());
+//        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setType(req.getType());
         user.setStatus(UserStatus.NONE);
+
+        UserEntity result = userRepository.save(user);
         userRepository.save(user);
 
         if(user.getId() != null){
@@ -141,13 +143,13 @@ public class UserServiceImpl implements UserService {
                 addressEntity.setCity(address.getCity());
                 addressEntity.setCountry(address.getCountry());
                 addressEntity.setAddressType(address.getAddressType());
-                addressEntity.setUserId(user.getId());
+                addressEntity.setUserId(result.getId());
                 addresses.add(addressEntity);
             });
             addressRepository.saveAll(addresses);
             log.info("Saved addresses: {}", addresses);
         }
-        return user.getId();
+        return result.getId();
     }
 
     @Override
