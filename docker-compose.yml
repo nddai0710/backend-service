@@ -18,19 +18,21 @@ services:
 
   backend-service:
     container_name: backend-service
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    image: nddai0710/backend-service:20262107-dev
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
     ports:
-      - "8081:8081"
+      - "8080:8080"
     env_file:
       - .env
     environment:
-      DATABASE_HOST: host.docker.internal
-      DATABASE_PORT: 5431
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: password
-      LOGSTASH_HOST: host.docker.internal:5600
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/postgres
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: password
+      LOGSTASH_HOST: logstash:5600
+    depends_on:
+      - postgres
     networks:
       - default
 
@@ -72,9 +74,48 @@ services:
     networks:
       - default
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - '9090:9090'
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    environment: # account: grafana/password
+      - GF_SECURITY_ADMIN_USER=grafana
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    ports:
+      - '3000:3000'
+    links:
+      - prometheus
+    volumes:
+      - grafana:/var/lib/grafana
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins_server
+    privileged: true
+    user: root # Chạy dưới quyền root để có thể truy cập docker.sock
+    restart: unless-stopped
+    ports:
+      - "8081:8080"   # Port truy cập giao diện Web của Jenkins
+      - "50000:50000" # Port dành cho giao tiếp giữa Jenkins Master và các Agents
+    volumes:
+      - jenkins_home:/var/jenkins_home # Mount volume để lưu trữ dữ liệu vĩnh viễn
+      - /var/run/docker.sock:/var/run/docker.sock # Cho phép Jenkins gọi Docker daemon của máy host
 networks:
   default:
     name: backend-network
 
 volumes:
   postgres:
+  grafana:
+  jenkins_home:

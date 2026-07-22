@@ -5,7 +5,7 @@ spring:
   devtools:
     add-properties: true
   datasource:
-    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_POST:5432/postgres
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/postgres}
     username: ${POSTGRES_USERNAME:postgres}
     password: ${POSTGRES_PASSWORD:dai123}
     hikari: # Connection poll

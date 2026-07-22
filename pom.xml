@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<image.path>registry.hub.docker.com/nddai0710</image.path>
 	</properties>
 	<dependencies>
 		<!--health check-->
@@ -141,6 +142,13 @@
 			<artifactId>logstash-logback-encoder</artifactId>
 			<version>6.6</version>
 		</dependency>
+
+		<!--monitoring-->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
 	<profiles>
@@ -182,6 +190,34 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>3.4.3</version>
+				<configuration>
+					<from>
+						<image>eclipse-temurin:17-jre-alpine</image>
+					</from>
+					<to>
+						<image>${image.path}/${project.artifactId}:20262107-dev</image>
+						<!-- Setting dockerhub account -->
+						<auth>
+							<!--suppress UnresolvedMavenProperty -->
+							<username>${env.DOCKER_USERNAME}</username>
+							<!--suppress UnresolvedMavenProperty -->
+							<password>${env.DOCKER_PASSWORD}</password>
+						</auth>
+					</to>
+					<container>
+						<ports>
+							<port>8080</port>
+						</ports>
+						<environment>
+							<SPRING_PROFILES_ACTIVE>dev</SPRING_PROFILES_ACTIVE>
+						</environment>
+					</container>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<executions>
@@ -218,7 +254,9 @@
 				</executions>
 			</plugin>
 		</plugins>
+
 		<finalName>backend-service</finalName>
 	</build>
+
 
 </project>
