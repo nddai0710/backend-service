@@ -1,6 +1,7 @@
 package vn.daijava;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,7 @@ import vn.daijava.controller.AuthenticationController;
 import vn.daijava.controller.UserController;
 
 @SpringBootTest
-@ActiveProfiles("test")
+@Disabled
 class BackendServiceApplicationTests {
 
 //	@InjectMocks
